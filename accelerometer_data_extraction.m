@@ -3,8 +3,7 @@ clear all; close all; clc
 % selecting the .rec file first 
 [file,path]=uigetfile('*.rec','Select the .rec file to be analyzed');
 FileName = file(1:end-4);
-LFPFolder = [FileName,'.LFP'];
-TargetFs = 1000;
+TargetFs = 500;
 
 AnalogFolder = [FileName, '.analog'];
 cd(AnalogFolder)
@@ -25,48 +24,72 @@ movement_data = [g_x'; g_y'; g_z'];
 meeg = abs(zscore(movement_data')');
 meeg = sum(meeg, 1);
 
-cd(path);
-cd(LFPFolder);
+%% Plot meeg signal and smoothed meeg signal
+% the image was saved as 'raw_and_smoothed_meeg_signal.m
 
-%% choose the lfp channel to analyze 
+sm_meeg = smooth(meeg);
 
-prompt = {'Enter tetrode number:','Enter channel number:'};
-dlgtitle = 'Channels to analyze';
-dims = [1 35];
-channelsToAnalyze = inputdlg(prompt,dlgtitle,dims);
+sm_std = std(sm_meeg);
+std = std(meeg);
 
-tetrodeNum = str2num(channelsToAnalyze{1});
-channelNum = str2num(channelsToAnalyze{2});
-%%
+tiledlayout(2,1)
+nexttile
+plot(diff(meeg))
+title('meeg signal')
+hold on;
+xline(std,'k','LineWidth', 2,'DisplayName','Standard Deviation')
 
-for i = 1:numel(tetrodeNum)
-    lfpToExtract = [LFPFolder,'_','nt',num2str(tetrodeNum(i)),'ch',num2str(channelNum(i)),'.dat'];
-    dataTrodes = readTrodesExtractedDataFile(lfpToExtract);
-    eeg_data{i} = double(dataTrodes.fields.data);
-end
+%nexttile
+%plot(diff(smooth_meeg))
 
-samplingFrequency = 5;
-smoothWindowEMG = 10;
-matfilename = 'EMGLikeSignalMat';
-sig1 = eeg_data{1};
-sig2 = eeg_data{2};
-%%
-maxfreqband = floor(max([500 TargetFs/2]));
-xcorr_freqband = [275 300 maxfreqband-25 maxfreqband]; % Hz
-filteredSig1 = filtsig_in(sig1, TargetFs, xcorr_freqband);
-filteredSig2  = filtsig_in(sig2, TargetFs, xcorr_freqband);
+nexttile
+plot(diff(sm_meeg))
+title('smoothed meeg signal')
+hold on;
+xline(sm_std,'k','LineWidth', 2,'DisplayName','Standard Deviation')
 
-EMGFromLFP = compute_emg_buzsakiMethod(samplingFrequency, TargetFs, sig1, sig2, smoothWindowEMG, matfilename);
+%% This part was done to analyze if it is possible to use the LFP signal in order to get the EMG-like signal for automatic sleep scoring
+% It didn't really worked as wished so it is not important anymore
 
-cd(path);
-cd(AnalogFolder);
+% cd(path);
+% cd(LFPFolder);
 
-acc_time = readTrodesExtractedDataFile([FileName, '.timestamps.dat']);
+% prompt = {'Enter tetrode number:','Enter channel number:'};
+% dlgtitle = 'Channels to analyze';
+% dims = [1 35];
+% channelsToAnalyze = inputdlg(prompt,dlgtitle,dims);
 
-cd(path);
-cd(LFPFolder);
-lfp_time = readTrodesExtractedDataFile([FileName, '.timestamps.dat']);
-%plot(lfp_time.fields.data,filteredSig1, 'b', lfp_time.fields.data, filteredSig2, 'r')
+% tetrodeNum = str2num(channelsToAnalyze{1});
+% channelNum = str2num(channelsToAnalyze{2});
+
+% for i = 1:numel(tetrodeNum)
+%     lfpToExtract = [LFPFolder,'_','nt',num2str(tetrodeNum(i)),'ch',num2str(channelNum(i)),'.dat'];
+%     dataTrodes = readTrodesExtractedDataFile(lfpToExtract);
+%     eeg_data{i} = double(dataTrodes.fields.data);
+% end
+
+% samplingFrequency = 5;
+% smoothWindowEMG = 10;
+% matfilename = 'EMGLikeSignalMat';
+% sig1 = eeg_data{1};
+% sig2 = eeg_data{2};
+
+% maxfreqband = floor(max([500 TargetFs/2]));
+% xcorr_freqband = [275 300 maxfreqband-25 maxfreqband]; % Hz
+% filteredSig1 = filtsig_in(sig1, TargetFs, xcorr_freqband);
+% filteredSig2  = filtsig_in(sig2, TargetFs, xcorr_freqband);
+
+% EMGFromLFP = compute_emg_buzsakiMethod(samplingFrequency, TargetFs, sig1, sig2, smoothWindowEMG, matfilename);
+
+% cd(path);
+% cd(AnalogFolder);
+
+% acc_time = readTrodesExtractedDataFile([FileName, '.timestamps.dat']);
+
+% cd(path);
+% cd(LFPFolder);
+% lfp_time = readTrodesExtractedDataFile([FileName, '.timestamps.dat']);
+% plot(lfp_time.fields.data,filteredSig1, 'b', lfp_time.fields.data, filteredSig2, 'r')
 
 
 %tiledlayout(3,1)
